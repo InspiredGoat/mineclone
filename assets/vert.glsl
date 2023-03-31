@@ -20,7 +20,7 @@ void main() {
 //	float dist = pos.x * pos.x + pos.z * pos.z;
 //	pos.y -= dist / 200;
 
-	pos.y -= ((dist * dist) / 300.f);// - off;
+	pos.y -= ((dist * dist) / 3000.f);// - off;
 	
 	gl_Position = projection * view * pos;
 }

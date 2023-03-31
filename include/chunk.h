@@ -4,10 +4,10 @@
 #include "mesh.h"
 #include "types.h"
 
-#define CHUNK_LENGTH 8 
+#define CHUNK_LENGTH 16
 #define CHUNK_HEIGHT 32
-#define CHUNKS_RADIUS 25 
-#define CHUNKS_RAYCAST_MAX_STEPS 100
+#define CHUNKS_RADIUS 50
+#define CHUNKS_RAYCAST_MAX_STEPS 1000
 
 // blocks are stored as ids that can be referenced later on
 typedef byte block_id;
@@ -23,10 +23,14 @@ void Chunks_init();
 void Chunks_free();
 void Chunks_update();
 
+bool Chunks_sphereCollisionCheck(Vector3 world_pos, float radius);
+Vector3 Chunks_sphereCollision(Vector3 world_pos, float radius);
+
 void Chunk_test(int amount);
 void Chunks_setBlock(uint chunk_id, Vector3 block_pos, block_id type);
+block_id Chunks_getBlock(Vector3 world_pos);
 void Chunks_setBlockRadius(uint chunk_id, Vector3 block_pos, uint radius, block_id type);
-int Chunks_getBlockFromRay(Vector3 origin, Vector3 dir, float max_dist, block_id* type, uint* chunk_id, uint* block_id, Vector3* pos);
+int Chunks_getBlockFromRay(Vector3 origin, Vector3 dir, float max_dist, block_id* type, uint* chunk_id, uint* block_id, Vector3* pos, Vector3* normal);
 
 Vector3 Chunks_getBlockPosFromRay(Vector3 origin, Vector3 dir, float max_dist);
 uint Chunks_getBlockIdFromRay(Vector3 origin, Vector3 dir, float max_dist);
@@ -38,3 +42,4 @@ Vector3 world_to_chunk(Vector3 world_pos);
 Vector3 block_to_world(Vector3 world_pos, uint chunk_id);
 Vector3 world_to_block(Vector3 world_pos);
 #endif
+

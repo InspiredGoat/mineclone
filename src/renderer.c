@@ -123,8 +123,8 @@ void Renderer_display() {
 	Vector3 chunk_pos;
 	chunk_pos = world_to_chunk(camera->pos);
 
-	printf("cam pos: %f, %f, %f\n", camera->pos.x, camera->pos.y, camera->pos.z);
-	printf("cam pos: %f, %f, %f\n", chunk_pos.x, chunk_pos.y, chunk_pos.z);
+//	printf("cam pos: %f, %f, %f\n", camera->pos.x, camera->pos.y, camera->pos.z);
+//	printf("cam pos: %f, %f, %f\n", chunk_pos.x, chunk_pos.y, chunk_pos.z);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
@@ -188,6 +188,8 @@ void Renderer_display() {
 	glDrawArrays(GL_TRIANGLES, 0, chunk_debug_mesh.vertex_count);
 
 
+	Vector3 norm;
+	Chunks_getBlockFromRay((Vector3) { camera->pos.x , camera->pos.y , camera->pos.z }, camera->front, 10.f, NULL, NULL, NULL, NULL, &norm);
 	selected_pos = Chunks_getBlockPosFromRay((Vector3) { camera->pos.x , camera->pos.y , camera->pos.z }, camera->front, 10.f);
 	glBindVertexArray(line_vao);
 	glUseProgram(white_shader);

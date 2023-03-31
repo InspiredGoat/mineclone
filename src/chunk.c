@@ -14,8 +14,12 @@
 Chunk* chunks;
 Mesh* chunk_meshes;
 byte* chunk_changed;
-                         
+
 Mesh chunk_debug_mesh;
+
+
+#define CHUNKS_INDEX(x, z)		CHUNKS_RADIUS * z + x
+#define BLOCK_INDEX(x, y, z)	(z * CHUNK_HEIGHT + y) * CHUNK_LENGTH + x
 
 
 float interpolate(float x, float y, float weight) {
@@ -164,7 +168,7 @@ void Chunks_init() {
 					for(unsigned int _z = 0; _z < CHUNK_LENGTH; _z++) {
 						unsigned int j = (_z * CHUNK_HEIGHT + _y) * CHUNK_LENGTH + _x;
 
-						chunks[i].data[j] = 1;//_y + 5 < (noise2d(x / 300.f + _x / 2400.f,  y / 300.f + _z / 2400.f)) * (CHUNK_HEIGHT / 2.f);// && (_z > 0 && _z < CHUNK_LENGTH) && (_x > 0 && _x < CHUNK_LENGTH);
+						chunks[i].data[j] = _y < 20;//(sin(x + _x / 16.f - y + _z / 16.f) * 8 + 16);//(noise2d(x / 300.f + _x / 2400.f,  y / 300.f + _z / 2400.f)) * (CHUNK_HEIGHT / 4.f);// && (_z > 0 && _z < CHUNK_LENGTH) && (_x > 0 && _x < CHUNK_LENGTH);
 					}
 				}
 			}
@@ -205,7 +209,7 @@ void Chunk_generateMesh(uint chunk_id) {
 			}
 		}
 	}
-	
+
 	// allocate all the quads
 	Vector3 verts[quad_count * 6];
 	Vector2 uvs[quad_count * 6];
@@ -215,7 +219,7 @@ void Chunk_generateMesh(uint chunk_id) {
 	for(int x = 0; x < CHUNK_LENGTH; x++) {
 		for(int y = 0; y < CHUNK_HEIGHT; y++) {
 			for(int z = 0; z < CHUNK_LENGTH; z++) {
-				unsigned int block_index = (z * CHUNK_HEIGHT + y) * CHUNK_LENGTH + x;
+				unsigned int block_index = BLOCK_INDEX(x, y, z);
 				if(chunks[chunk_id].data[block_index] != 0) {
 					// loop through neighbours
 					for(byte i = 0; i < 6; i++) {
@@ -225,7 +229,7 @@ void Chunk_generateMesh(uint chunk_id) {
 						if(y + neighbour_dirs[i].y < 0 || y + neighbour_dirs[i].y >= CHUNK_HEIGHT) {
 							neighbour = 0;
 						}
-						else if((x + neighbour_dirs[i].x < 0 || x + neighbour_dirs[i].x >= CHUNK_LENGTH) || 
+						else if((x + neighbour_dirs[i].x < 0 || x + neighbour_dirs[i].x >= CHUNK_LENGTH) ||
 								(z + neighbour_dirs[i].z < 0 || z + neighbour_dirs[i].z >= CHUNK_LENGTH)) {
 							Vector2 chunk_neighbour;
 							chunk_neighbour.x = chunks[chunk_id].x + neighbour_dirs[i].x;
@@ -286,7 +290,7 @@ void Chunks_setBlock(uint chunk_id, Vector3 block_pos, block_id type) {
 		block_pos.z >= 0 && block_pos.z < CHUNK_LENGTH) {
 		uint index = (block_pos.z * CHUNK_HEIGHT + block_pos.y) * CHUNK_LENGTH + block_pos.x;
 		chunk_changed[chunk_id] = (type != chunks[chunk_id].data[index]);
-		
+
 		// notify neighbour(s)
 		uint neighbour_index;
 		neighbour_index = chunks[chunk_id].y * CHUNKS_RADIUS + (chunks[chunk_id].x + (block_pos.x == CHUNK_LENGTH - 1) - (block_pos.x == 0)) % CHUNKS_RADIUS;
@@ -299,6 +303,62 @@ void Chunks_setBlock(uint chunk_id, Vector3 block_pos, block_id type) {
 	}
 }
 
+block_id Chunks_getBlock(Vector3 world_pos) {
+	Vector3 chunk_pos = world_to_chunk(world_pos);
+	Vector3 block_pos = world_to_block(world_pos);
+
+	uint chunk_index = CHUNKS_RADIUS * chunk_pos.z + chunk_pos.x;
+	uint block_index = BLOCK_INDEX(block_pos.x, block_pos.y, block_pos.z);
+
+	return chunks[chunk_index].data[block_index];
+}
+
+Vector3 Chunks_sphereCollision(Vector3 world_pos, float radius) {
+	Vector3 chunk_pos = world_to_chunk(world_pos);
+	Vector3 block_pos = world_to_block(world_pos);
+	int x, y, z, i, j;
+	int min_cube_length;
+	uint chunk_index, block_index;
+	uint chunk_current_index, block_current_index;
+
+	chunk_index = CHUNKS_INDEX(chunk_pos.x, chunk_pos.z);
+	block_index = BLOCK_INDEX(block_pos.x, block_pos.y, block_pos.z);
+
+	// find maximum length of cube, set to 1 if radius is smaller than 1
+	min_cube_length = (int) radius + ((int) radius <= 1);
+
+
+	for(x = block_pos.x - min_cube_length;
+			x < block_pos.x + min_cube_length; x++)
+	{
+		if(x > CHUNK_LENGTH)
+			chunk_current_index = CHUNKS_INDEX(chunks[chunk_index].x + 1, chunks[chunk_index].z)
+		else if(x < 0)
+			chunk_current_index = CHUNKS_INDEX(chunks[chunk_index].x - 1, chunks[chunk_index].z)
+
+		for(y = block_pos.y - min_cube_length;
+				y < block_pos.y + min_cube_length; y++)
+		{
+			if(y > CHUNK_LENGTH || y < 0)
+				continue;
+
+			for(z = block_pos.z - min_cube_length;
+					z < block_pos.z + min_cube_length; z++)
+			{
+				if(z > CHUNK_LENGTH)
+					chunk_current_index = CHUNKS_INDEX(chunks[chunk_current_index].x, chunks[chunk_index].z + 1)
+				else if(z < 0)
+					chunk_current_index = CHUNKS_INDEX(chunks[chunk_current_index].x, chunks[chunk_index].z - 1)
+
+				// for each face
+				for(i = 0; i < 6; i++)
+					for(j = 0; j < 4; j++)
+
+			}
+		}
+	}
+}
+
 void Chunks_update() {
 	for(unsigned int i = 0; i < CHUNKS_RADIUS * CHUNKS_RADIUS; i++) {
 		if(chunk_changed[i] == 1) {
@@ -307,8 +367,9 @@ void Chunks_update() {
 	}
 }
 
+
 // TODO: revisit this code if world wrapping is funky
-int Chunks_getBlockFromRay(Vector3 origin, Vector3 dir, float max_dist, block_id* type, uint* chunk_id, uint* block_id, Vector3* pos) {
+int Chunks_getBlockFromRay(Vector3 origin, Vector3 dir, float max_dist, block_id* type, uint* chunk_id, uint* block_id, Vector3* pos, Vector3* normal) {
 	Vector3 current_pos = origin;
 	float step = (max_dist / CHUNKS_RAYCAST_MAX_STEPS);
 
@@ -333,8 +394,8 @@ int Chunks_getBlockFromRay(Vector3 origin, Vector3 dir, float max_dist, block_id
 		Vector3 chunk_pos = world_to_chunk(current_pos);
 		Vector3 block_pos = world_to_block(current_pos);
 
-		if( (current_pos.x >= 0 && current_pos.x < CHUNKS_RADIUS * CHUNK_LENGTH) && 
-			(current_pos.z >= 0 && current_pos.z < CHUNKS_RADIUS * CHUNK_LENGTH) && 
+		if( (current_pos.x >= 0 && current_pos.x < CHUNKS_RADIUS * CHUNK_LENGTH) &&
+			(current_pos.z >= 0 && current_pos.z < CHUNKS_RADIUS * CHUNK_LENGTH) &&
 			(current_pos.y >= 0 && current_pos.y < CHUNK_HEIGHT)) {
 			uint chunk_index = CHUNKS_RADIUS * chunk_pos.z + chunk_pos.x;
 			uint block_index = (block_pos.z * CHUNK_HEIGHT + block_pos.y) * CHUNK_LENGTH + block_pos.x;
@@ -353,6 +414,45 @@ int Chunks_getBlockFromRay(Vector3 origin, Vector3 dir, float max_dist, block_id
 					*type = chunks[chunk_index].data[block_index];
 				if(pos != NULL)
 					*pos = current_pos;
+				if(normal != NULL) {
+					byte shortest_neighbour;
+					float shortest_dist = 10000000;
+
+					// find average distance between opposite points on a face
+					for(byte i = 0; i < 6; i++) {
+						Vector3 v1;
+						Vector3 v2;
+
+						v1 = block_to_world(world_to_block(current_pos), chunk_index);
+						v2 = v1;
+
+						v1.x += neighbour_dirs[i].x + .5f;
+						v1.y += neighbour_dirs[i].y + .5f;
+						v1.z += neighbour_dirs[i].z + .5f;
+
+//						v2.x += neighbour_dirs[i].x + .5f;
+//						v2.y += neighbour_dirs[i].y + .5f;
+//						v2.z += neighbour_dirs[i].z + .5f;
+
+						float dist;
+						dist  = (v1.x - current_pos.x) * (v1.x - current_pos.x) +
+								(v1.y - current_pos.y) * (v1.y - current_pos.y) +
+								(v1.z - current_pos.z) * (v1.z - current_pos.z);
+
+//						dist += (v2.x - current_pos.x) * (v2.x - current_pos.x) +
+//						 		(v2.y - current_pos.y) * (v2.y - current_pos.y) +
+//								(v2.z - current_pos.z) * (v2.z - current_pos.z);
+//						dist *= .5f;
+
+						if(dist < shortest_dist) {
+							shortest_neighbour = i;
+							shortest_dist = dist;
+						}
+					}
+
+					*normal = neighbour_dirs[shortest_neighbour];
+					//printf("Normal: %f, %f, %f\n", neighbour_dirs[shortest_neighbour].x, neighbour_dirs[shortest_neighbour].y, neighbour_dirs[shortest_neighbour].z);
+				}
 
 				return 1;
 			}
@@ -364,19 +464,19 @@ int Chunks_getBlockFromRay(Vector3 origin, Vector3 dir, float max_dist, block_id
 
 Vector3 Chunks_getBlockPosFromRay(Vector3 origin, Vector3 dir, float max_dist) {
 	Vector3 res;
-	Chunks_getBlockFromRay(origin, dir, max_dist, NULL, NULL, NULL, &res);
+	Chunks_getBlockFromRay(origin, dir, max_dist, NULL, NULL, NULL, &res, NULL);
 	return res;
 }
 
 uint Chunks_getBlockIdFromRay(Vector3 origin, Vector3 dir, float max_dist) {
 	uint res;
-	Chunks_getBlockFromRay(origin, dir, max_dist, NULL, NULL, &res, NULL);
+	Chunks_getBlockFromRay(origin, dir, max_dist, NULL, NULL, &res, NULL, NULL);
 	return res;
 }
 
 uint Chunks_getChunkIdFromRay(Vector3 origin, Vector3 dir, float max_dist) {
 	uint res;
-	Chunks_getBlockFromRay(origin, dir, max_dist, NULL, &res, NULL, NULL);
+	Chunks_getBlockFromRay(origin, dir, max_dist, NULL, &res, NULL, NULL, NULL);
 	return res;
 }
 
@@ -385,7 +485,7 @@ void Chunks_free() {
 	Mesh_destroy(&chunk_debug_mesh);
 	for(uint i = 0; i < CHUNKS_RADIUS * CHUNKS_RADIUS; i++)
 		Mesh_destroy(&chunk_meshes[i]);
-	
+
 	// destroy all chunk data
 	free(chunks);
 	free(chunk_meshes);
@@ -403,3 +503,4 @@ void Chunk_test(int amount) {
 		Chunk_generateMesh(i);
 	}
 }
+
