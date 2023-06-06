@@ -95,21 +95,32 @@ int main() {
 		else
 			set_input_mode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-		float move_speed = 6.f;
-		if(get_key(GLFW_KEY_LEFT_SHIFT))
-			move_speed = 9.f;
+		float move_speed = 7.f;
+		if(get_key(GLFW_KEY_RIGHT_SHIFT))
+			move_speed = 50.f;
+		else if(get_key(GLFW_KEY_LEFT_SHIFT))
+			move_speed = 20.f;
 
 		float move_vel_x = 0;
+		float move_vel_y = 0;
 		float move_vel_z = 0;
+
+		static bool fly_mode = 0;
 
 		if(get_key(GLFW_KEY_W)) {
 			move_vel_x += cos(cam.yaw);
 			move_vel_z += sin(cam.yaw);
+
+			if (fly_mode)
+				move_vel_y += (cam.pitch);
 		}
 
 		if(get_key(GLFW_KEY_S)) {
 			move_vel_x -= cos(cam.yaw);
 			move_vel_z -= sin(cam.yaw);
+
+			if (fly_mode)
+				move_vel_y -= (cam.pitch);
 		}
 
 		if(get_key(GLFW_KEY_A)) {
@@ -122,38 +133,25 @@ int main() {
 			move_vel_z -= sin(cam.yaw - PI / 2);
 		}
 
-#define INTERPOLATION_STEPS 10
-		for(int i = 0; i < INTERPOLATION_STEPS; i++) {
-			float off_x, off_y, off_z = 0;
-
-			off_x = move_vel_x * move_speed * (delta / INTERPOLATION_STEPS);
-			off_y = -10 * delta / INTERPOLATION_STEPS;
-			off_z = move_vel_z * move_speed * (delta / INTERPOLATION_STEPS);
-
-			cam.pos.x += off_x;
-			cam.pos.y += off_y;
-			cam.pos.z += off_z;
-			if(!Chunks_getBlock((Vector3) { cam.pos.x, cam.pos.y + 2.f, cam.pos.z })) {
-				cam.pos.x -= off_x;
-				cam.pos.y -= off_y;
-				cam.pos.z -= off_z;
-				break;
-			}
-
+		if(get_key(GLFW_KEY_SPACE)) {
+			move_vel_y += 1.f;
 		}
 
+		if(get_key(GLFW_KEY_LEFT_CONTROL)) {
+			move_vel_y -= 1.f;
+		}
 
-		/* if(Chunks_getBlockFromRay((Vector3) { cam.pos.x + 0.5f, cam.pos.y + 0.5f, cam.pos.z + 0.5f, }, (Vector3) { 0, -1.f, 0 }, 2.f, NULL, NULL, NULL, NULL, NULL)) { */
-		/* 	cam.pos.y -= 9 * delta; */
-		/* } */
+		float off_x, off_y, off_z = 0;
 
-//		if( !Chunks_getBlock((Vector3) { new_x + 0.5f, cam.pos.y + 0.5f, cam.pos.z + 0.5f }) &&
-//			!Chunks_getBlock((Vector3) { new_x + 0.5f, cam.pos.y + 1.5f, cam.pos.z + 0.5f }))
+		off_x = move_vel_x * move_speed * (delta);
+		off_y = move_vel_y * move_speed * delta;
+		off_z = move_vel_z * move_speed * (delta);
 
-//		if( !Chunks_getBlock((Vector3) { cam.pos.x + 0.5f, cam.pos.y + 0.5f, new_z + 0.5f }) &&
-//			!Chunks_getBlock((Vector3) { cam.pos.x + 0.5f, cam.pos.y - 1.5f, new_z + 0.5f }))
+		cam.pos.x += off_x;
+		cam.pos.y += off_y;
+		cam.pos.z += off_z;
 
-		if(get_mouse_button(GLFW_MOUSE_BUTTON_LEFT) && !left_click_down) {
+		if(get_mouse_button(GLFW_MOUSE_BUTTON_LEFT) && (!left_click_down || get_key(GLFW_KEY_F))) {
 			left_click_down = true;
 
 			uint chunk_id;
@@ -164,7 +162,7 @@ int main() {
 			}
 		}
 
-		else if(get_mouse_button(GLFW_MOUSE_BUTTON_RIGHT) && !right_click_down) {
+		else if(get_mouse_button(GLFW_MOUSE_BUTTON_RIGHT) && (!right_click_down || get_key(GLFW_KEY_F))) {
 			right_click_down = true;
 			Vector3 chunk_pos;
 			Vector3 block_pos;

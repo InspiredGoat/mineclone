@@ -21,6 +21,13 @@ Mesh chunk_debug_mesh;
 #define CHUNKS_INDEX(x, z)		CHUNKS_RADIUS * z + x
 #define BLOCK_INDEX(x, y, z)	(z * CHUNK_HEIGHT + y) * CHUNK_LENGTH + x
 
+float max(float a, float b)
+{
+	if (a > b)
+		return a;
+	else
+		return b;
+}
 
 float interpolate(float x, float y, float weight) {
 	return (x - y) * weight + y;
@@ -168,7 +175,7 @@ void Chunks_init() {
 					for(unsigned int _z = 0; _z < CHUNK_LENGTH; _z++) {
 						unsigned int j = (_z * CHUNK_HEIGHT + _y) * CHUNK_LENGTH + _x;
 
-						chunks[i].data[j] = _y < 20;//(sin(x + _x / 16.f - y + _z / 16.f) * 8 + 16);//(noise2d(x / 300.f + _x / 2400.f,  y / 300.f + _z / 2400.f)) * (CHUNK_HEIGHT / 4.f);// && (_z > 0 && _z < CHUNK_LENGTH) && (_x > 0 && _x < CHUNK_LENGTH);
+						chunks[i].data[j] = _y < (max(cos(x + _x / 16.f), sin(y + _z / 16.f) * 4 + 16)) ? 1 : 0;//(noise2d(x / 300.f + _x / 2400.f,  y / 300.f + _z / 2400.f)) * (CHUNK_HEIGHT / 4.f);// && (_z > 0 && _z < CHUNK_LENGTH) && (_x > 0 && _x < CHUNK_LENGTH);
 					}
 				}
 			}
@@ -313,51 +320,51 @@ block_id Chunks_getBlock(Vector3 world_pos) {
 	return chunks[chunk_index].data[block_index];
 }
 
-Vector3 Chunks_sphereCollision(Vector3 world_pos, float radius) {
-	Vector3 chunk_pos = world_to_chunk(world_pos);
-	Vector3 block_pos = world_to_block(world_pos);
-	int x, y, z, i, j;
-	int min_cube_length;
-	uint chunk_index, block_index;
-	uint chunk_current_index, block_current_index;
+/* Vector3 Chunks_sphereCollision(Vector3 world_pos, float radius) { */
+/* 	Vector3 chunk_pos = world_to_chunk(world_pos); */
+/* 	Vector3 block_pos = world_to_block(world_pos); */
+/* 	int x, y, z, i, j; */
+/* 	int min_cube_length; */
+/* 	uint chunk_index, block_index; */
+/* 	uint chunk_current_index, block_current_index; */
 
-	chunk_index = CHUNKS_INDEX(chunk_pos.x, chunk_pos.z);
-	block_index = BLOCK_INDEX(block_pos.x, block_pos.y, block_pos.z);
+/* 	chunk_index = CHUNKS_INDEX(chunk_pos.x, chunk_pos.z); */
+/* 	block_index = BLOCK_INDEX(block_pos.x, block_pos.y, block_pos.z); */
 
-	// find maximum length of cube, set to 1 if radius is smaller than 1
-	min_cube_length = (int) radius + ((int) radius <= 1);
+/* 	// find maximum length of cube, set to 1 if radius is smaller than 1 */
+/* 	min_cube_length = (int) radius + ((int) radius <= 1); */
 
 
-	for(x = block_pos.x - min_cube_length;
-			x < block_pos.x + min_cube_length; x++)
-	{
-		if(x > CHUNK_LENGTH)
-			chunk_current_index = CHUNKS_INDEX(chunks[chunk_index].x + 1, chunks[chunk_index].z)
-		else if(x < 0)
-			chunk_current_index = CHUNKS_INDEX(chunks[chunk_index].x - 1, chunks[chunk_index].z)
+/* 	for(x = block_pos.x - min_cube_length; */
+/* 			x < block_pos.x + min_cube_length; x++) */
+/* 	{ */
+/* 		if(x > CHUNK_LENGTH) */
+/* 			chunk_current_index = CHUNKS_INDEX(chunks[chunk_index].x + 1, chunks[chunk_index].z) */
+/* 		else if(x < 0) */
+/* 			chunk_current_index = CHUNKS_INDEX(chunks[chunk_index].x - 1, chunks[chunk_index].z) */
 
-		for(y = block_pos.y - min_cube_length;
-				y < block_pos.y + min_cube_length; y++)
-		{
-			if(y > CHUNK_LENGTH || y < 0)
-				continue;
+/* 		for(y = block_pos.y - min_cube_length; */
+/* 				y < block_pos.y + min_cube_length; y++) */
+/* 		{ */
+/* 			if(y > CHUNK_LENGTH || y < 0) */
+/* 				continue; */
 
-			for(z = block_pos.z - min_cube_length;
-					z < block_pos.z + min_cube_length; z++)
-			{
-				if(z > CHUNK_LENGTH)
-					chunk_current_index = CHUNKS_INDEX(chunks[chunk_current_index].x, chunks[chunk_index].z + 1)
-				else if(z < 0)
-					chunk_current_index = CHUNKS_INDEX(chunks[chunk_current_index].x, chunks[chunk_index].z - 1)
+/* 			for(z = block_pos.z - min_cube_length; */
+/* 					z < block_pos.z + min_cube_length; z++) */
+/* 			{ */
+/* 				if(z > CHUNK_LENGTH) */
+/* 					chunk_current_index = CHUNKS_INDEX(chunks[chunk_current_index].x, chunks[chunk_index].z + 1) */
+/* 				else if(z < 0) */
+/* 					chunk_current_index = CHUNKS_INDEX(chunks[chunk_current_index].x, chunks[chunk_index].z - 1) */
 
-				// for each face
-				for(i = 0; i < 6; i++)
-					for(j = 0; j < 4; j++)
+/* 				// for each face */
+/* 				for(i = 0; i < 6; i++) */
+/* 					for(j = 0; j < 4; j++) */
 
-			}
-		}
-	}
-}
+/* 			} */
+/* 		} */
+/* 	} */
+/* } */
 
 void Chunks_update() {
 	for(unsigned int i = 0; i < CHUNKS_RADIUS * CHUNKS_RADIUS; i++) {

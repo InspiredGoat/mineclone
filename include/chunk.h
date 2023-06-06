@@ -6,7 +6,7 @@
 
 #define CHUNK_LENGTH 16
 #define CHUNK_HEIGHT 32
-#define CHUNKS_RADIUS 50
+#define CHUNKS_RADIUS 30
 #define CHUNKS_RAYCAST_MAX_STEPS 1000
 
 // blocks are stored as ids that can be referenced later on
