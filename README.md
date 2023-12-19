@@ -1,5 +1,5 @@
 # Mineclone
-A little minecraft clone made in C. 
+A minecraft clone made in C. 
 
 
 
